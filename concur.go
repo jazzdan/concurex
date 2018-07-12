@@ -54,19 +54,50 @@ func (s *server1) order(a address) {
 	s.queue <- a
 }
 
-// exercise 2
 type server2 struct {
-	sh shipper
+	sh    shipper
+	ch    chan address
+	queue []address
 }
 
 func newServer2(sh shipper) server {
-	return &server2{
+	ch := make(chan address)
+	s := &server2{
 		sh: sh,
+		ch: ch,
+	}
+
+	go s.accept()
+
+	return s
+}
+
+func (s *server2) accept() {
+	var workerDone chan struct{}
+	for {
+		select {
+		case a := <-s.ch:
+			s.queue = append(s.queue, a)
+		case <-workerDone:
+			workerDone = nil
+		}
+
+		if len(s.queue) > 0 && workerDone == nil {
+			workerDone = make(chan struct{})
+			var a address
+			a, s.queue = s.queue[0], s.queue[1:]
+			go s.work(workerDone, a)
+		}
 	}
 }
 
-func (s *server2) order(a address) {
+func (s *server2) work(doneCh chan struct{}, a address) {
 	s.sh.ship(a)
+	doneCh <- struct{}{}
+}
+
+func (s *server2) order(a address) {
+	s.ch <- a
 }
 
 // exercise 3
