@@ -28,17 +28,30 @@ func (s *server0) order(a address) {
 
 // exercise 1
 type server1 struct {
-	sh shipper
+	sh    shipper
+	queue chan address
 }
 
 func newServer1(sh shipper) server {
-	return &server1{
-		sh: sh,
+	queue := make(chan address)
+	s := &server1{
+		sh:    sh,
+		queue: queue,
+	}
+
+	go s.loop()
+
+	return s
+}
+
+func (s *server1) loop() {
+	for a := range s.queue {
+		s.sh.ship(a)
 	}
 }
 
 func (s *server1) order(a address) {
-	s.sh.ship(a)
+	s.queue <- a
 }
 
 // exercise 2
