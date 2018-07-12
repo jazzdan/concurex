@@ -1,5 +1,7 @@
 package concurex
 
+import "sync"
+
 // interfaces
 type address int
 
@@ -29,15 +31,19 @@ func (s *server0) order(a address) {
 // exercise 1
 type server1 struct {
 	sh shipper
+	mu *sync.Mutex
 }
 
 func newServer1(sh shipper) server {
 	return &server1{
 		sh: sh,
+		mu: &sync.Mutex{},
 	}
 }
 
 func (s *server1) order(a address) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	s.sh.ship(a)
 }
 
