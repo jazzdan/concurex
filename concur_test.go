@@ -85,7 +85,6 @@ func Test2(t *testing.T) {
 
 	orderWg.Wait()
 	unfreezeShipWg.Done()
-	orderWg.Wait()
 	shipDoneWg.Wait()
 
 	if sum != 4950 {
