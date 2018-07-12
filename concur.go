@@ -67,17 +67,26 @@ func newServer2(sh shipper) server {
 		ch: ch,
 	}
 
-	go s.accept()
+	go s.accept(s.ch)
+	ch = nil
 
 	return s
 }
 
-func (s *server2) accept() {
+func (s *server2) accept(ch chan address) {
 	var workerDone chan struct{}
 	for {
+		if len(s.queue) == 0 && workerDone == nil && ch == nil {
+			return
+		}
+
 		select {
-		case a := <-s.ch:
-			s.queue = append(s.queue, a)
+		case a, ok := <-ch:
+			if !ok {
+				ch = nil
+			} else {
+				s.queue = append(s.queue, a)
+			}
 		case <-workerDone:
 			workerDone = nil
 		}
@@ -88,6 +97,7 @@ func (s *server2) accept() {
 			a, s.queue = s.queue[0], s.queue[1:]
 			go s.work(workerDone, a)
 		}
+
 	}
 }
 
